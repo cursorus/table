@@ -2,141 +2,146 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Minimalist Periodic Table</title>
+    <title>Short Form Periodic Table</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --main-font: 'Arial', sans-serif;
-            --size-symbol: 24px;
-            --size-name: 14px;
-            --size-mass: 12px;
-            --text-color: #000;
+            --size-symbol: 22px;
+            --size-name: 12px;
+            --size-mass: 10px;
         }
 
-        body { font-family: var(--main-font); padding: 20px; background: #fff; color: var(--text-color); }
+        body { font-family: var(--main-font); background: #fff; padding: 20px; }
         
         .controls {
-            background: #f4f4f4; padding: 20px; border-radius: 12px;
-            display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;
-            border: 1px solid #ddd;
+            background: #f9f9f9; padding: 15px; border-radius: 8px;
+            display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;
+            border: 1px solid #eee;
         }
 
-        .control-group { display: flex; flex-direction: column; gap: 5px; }
-
-        /* Сетка таблицы БЕЗ границ */
+        /* Сетка на 8 колонок (Группы I - VIII) */
         #table-container {
-            display: inline-grid;
-            grid-template-columns: repeat(18, minmax(80px, 1fr)); /* Стандартная длинная форма */
-            gap: 15px;
-            padding: 20px;
-            background: white;
+            display: grid;
+            grid-template-columns: repeat(8, minmax(100px, 1fr));
+            gap: 20px 10px;
+            width: fit-content;
         }
 
         .element-cell {
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* Все влево */
+            align-items: flex-start;
             text-align: left;
-            line-height: 1.2;
+            line-height: 1.1;
         }
 
-        .sym { font-size: var(--size-symbol); font-weight: bold; }
-        .nam { font-size: var(--size-name); text-transform: lowercase; }
-        .mas { font-size: var(--size-mass); opacity: 0.8; }
+        .sym { font-size: var(--size-symbol); font-weight: bold; margin-bottom: 2px; }
+        .nam { font-size: var(--size-name); margin-bottom: 1px; }
+        .mas { font-size: var(--size-mass); opacity: 0.7; }
 
-        button.download-btn {
-            background: #007bff; color: white; border: none;
-            padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;
+        .group-header { font-weight: bold; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+
+        button { 
+            cursor: pointer; background: #222; color: #fff; border: none; 
+            padding: 8px 16px; border-radius: 4px; font-weight: bold;
         }
-        button.download-btn:hover { background: #0056b3; }
     </style>
 </head>
 <body>
 
 <div class="controls">
+    <input type="file" id="fontPicker" accept=".ttf,.otf">
     <div class="control-group">
-        <label>Свой шрифт:</label>
-        <input type="file" id="fontPicker" accept=".ttf,.otf,.woff">
-    </div>
-    <div class="control-group">
-        <label>Размер символа:</label>
-        <input type="range" min="10" max="60" value="24" oninput="updateSize('symbol', this.value)">
+        Символ: <input type="range" min="10" max="50" value="22" oninput="updateSize('symbol', this.value)">
     </div>
     <div class="control-group">
-        <label>Размер названия:</label>
-        <input type="range" min="8" max="30" value="14" oninput="updateSize('name', this.value)">
+        Имя: <input type="range" min="8" max="25" value="12" oninput="updateSize('name', this.value)">
     </div>
     <div class="control-group">
-        <label>Размер массы:</label>
-        <input type="range" min="8" max="30" value="12" oninput="updateSize('mass', this.value)">
+        Масса: <input type="range" min="8" max="25" value="10" oninput="updateSize('mass', this.value)">
     </div>
-    <div class="control-group" style="justify-content: flex-end;">
-        <button class="download-btn" onclick="downloadTable()">⬇ Скачать JPG</button>
-    </div>
+    <button onclick="downloadTable()">Скачать JPG</button>
 </div>
 
 <div id="table-container">
-    </div>
+    <div class="group-header">I</div><div class="group-header">II</div>
+    <div class="group-header">III</div><div class="group-header">IV</div>
+    <div class="group-header">V</div><div class="group-header">VI</div>
+    <div class="group-header">VII</div><div class="group-header">VIII</div>
+</div>
 
 <script>
-    // Обновление размеров текста
+    // Словарь перевода (базовые элементы для примера, API дополнит)
+    const ruNames = {
+        "Hydrogen": "Водород", "Helium": "Гелий", "Lithium": "Литий", "Beryllium": "Бериллий",
+        "Boron": "Бор", "Carbon": "Углерод", "Nitrogen": "Азот", "Oxygen": "Кислород",
+        "Fluorine": "Фтор", "Neon": "Неон", "Sodium": "Натрий", "Magnesium": "Магний",
+        "Aluminum": "Алюминий", "Silicon": "Кремний", "Phosphorus": "Фосфор", "Sulfur": "Сера",
+        "Chlorine": "Хлор", "Argon": "Аргон", "Potassium": "Калий", "Calcium": "Кальций",
+        "Scandium": "Скандий", "Titanium": "Титан", "Vanadium": "Ванадий", "Chromium": "Хром",
+        "Manganese": "Марганец", "Iron": "Железо", "Cobalt": "Кобальт", "Nickel": "Никель",
+        "Copper": "Медь", "Zinc": "Цинк", "Gallium": "Галлий", "Germanium": "Германий",
+        "Arsenic": "Мышьяк", "Selenium": "Селен", "Bromine": "Бром", "Krypton": "Криптон"
+        // ... можно расширить для всех 118
+    };
+
     function updateSize(type, val) {
         document.documentElement.style.setProperty(`--size-${type}`, val + 'px');
     }
 
-    // Загрузка данных об элементах
     async function loadElements() {
-        try {
-            const response = await fetch('https://raw.githubusercontent.com/Bowserinator/Periodic-Table-JSON/master/PeriodicTableJSON.json');
-            const data = await response.json();
-            const container = document.getElementById('table-container');
+        const response = await fetch('https://raw.githubusercontent.com/Bowserinator/Periodic-Table-JSON/master/PeriodicTableJSON.json');
+        const data = await response.json();
+        const container = document.getElementById('table-container');
 
-            data.elements.forEach(el => {
-                const cell = document.createElement('div');
-                cell.className = 'element-cell';
-                // Располагаем по сетке (xpos и ypos из API)
-                cell.style.gridColumn = el.xpos;
-                cell.style.gridRow = el.ypos;
+        data.elements.slice(0, 36).forEach(el => { // Для примера берем первые 36 (до Криптона)
+            const cell = document.createElement('div');
+            cell.className = 'element-cell';
 
-                cell.innerHTML = `
-                    <div class="sym">${el.symbol}</div>
-                    <div class="nam">${el.name.toLowerCase()}</div>
-                    <div class="mas">${el.atomic_mass.toFixed(2)}</div>
-                `;
-                container.appendChild(cell);
-            });
-        } catch (e) {
-            console.error("Ошибка загрузки данных:", e);
-        }
+            // Логика короткой формы (8 групп)
+            // В упрощенном виде: группа = (номер - 1) % 18, но для короткой формы 
+            // элементы побочных подгрупп (d-металлы) "схлопываются" в те же 8 колонок
+            let group = el.xpos;
+            if (group > 8 && group < 18) {
+                // Это d-элементы, в короткой форме они идут в группы I-VIII (побочные)
+                group = group - 10; 
+                if (group > 8) group = 8; // VIII группа длинная
+            } else if (group === 18) {
+                group = 8; // Благородные газы в VIII группу
+            }
+
+            cell.style.gridColumn = group;
+
+            const nameRu = ruNames[el.name] || el.name;
+
+            cell.innerHTML = `
+                <div class="sym">${el.symbol}</div>
+                <div class="nam">${nameRu.toLowerCase()}</div>
+                <div class="mas">${el.atomic_mass.toFixed(2)}</div>
+            `;
+            container.appendChild(cell);
+        });
     }
 
-    // Обработка шрифта
-    document.getElementById('fontPicker').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const fontName = 'CustomUserFont';
-                const fontFace = new FontFace(fontName, event.target.result);
-                fontFace.load().then(f => {
-                    document.fonts.add(f);
-                    document.documentElement.style.setProperty('--main-font', fontName);
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-    });
+    // Загрузка своего шрифта
+    document.getElementById('fontPicker').onchange = function(e) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const f = new FontFace('UserFont', ev.target.result);
+            f.load().then(font => {
+                document.fonts.add(font);
+                document.body.style.setProperty('--main-font', 'UserFont');
+            });
+        };
+        reader.readAsArrayBuffer(this.files[0]);
+    };
 
-    // Функция скачивания JPG
     function downloadTable() {
-        const table = document.getElementById('table-container');
-        html2canvas(table, {
-            backgroundColor: "#ffffff",
-            scale: 2 // Улучшает качество картинки
-        }).then(canvas => {
+        html2canvas(document.getElementById('table-container'), { backgroundColor: "#fff" }).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'periodic-table-custom.jpg';
-            link.href = canvas.toDataURL("image/jpeg", 0.9);
+            link.download = 'table.jpg';
+            link.href = canvas.toDataURL("image/jpeg");
             link.click();
         });
     }
