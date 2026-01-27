@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Custom Periodic Table</title>
+    <style>
+        :root {
+            --cell-border: 1px solid #444;
+            --main-font: 'Arial', sans-serif;
+            /* Динамические размеры */
+            --size-symbol: 20px;
+            --size-config: 10px;
+            --size-name: 12px;
+            --size-number: 12px;
+            --size-mass: 12px;
+        }
+
+        body { font-family: var(--main-font); padding: 20px; background: #fdfdfd; }
+        
+        .controls {
+            background: #eee;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+
+        /* Сетка таблицы */
+        .periodic-table {
+            display: grid;
+            grid-template-columns: 40px 60px repeat(8, 1fr);
+            border-left: var(--cell-border);
+            border-top: var(--cell-border);
+            width: fit-content;
+        }
+
+        .cell {
+            border-right: var(--cell-border);
+            border-bottom: var(--cell-border);
+            padding: 4px;
+            min-width: 100px;
+            min-height: 80px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .header { background: #f0f0f0; text-align: center; font-weight: bold; min-height: 30px; justify-content: center; }
+
+        /* Позиционирование элементов внутри ячейки согласно фото */
+        .top-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .config { font-size: var(--size-config); line-height: 1; text-align: left; }
+        .number { font-size: var(--size-number); font-weight: bold; }
+        
+        .symbol { 
+            font-size: var(--size-symbol); 
+            text-align: center; 
+            font-weight: bold; 
+            margin: 2px 0;
+        }
+
+        .bottom-row { text-align: left; }
+        .name { font-size: var(--size-name); display: block; }
+        .mass { font-size: var(--size-mass); display: block; }
+
+        /* Разделение на ряды (левая колонка) */
+        .period-num { background: #f9f9f9; font-weight: bold; align-items: center; justify-content: center; width: 40px;}
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <div class="control-group">
+        <label>Загрузить шрифт:</label>
+        <input type="file" id="fontPicker" accept=".ttf,.otf,.woff,.woff2">
+    </div>
+    <div class="control-group">
+        <label>Размер символа:</label>
+        <input type="range" min="10" max="50" value="20" oninput="updateSize('symbol', this.value)">
+    </div>
+    <div class="control-group">
+        <label>Эл. конфигурация:</label>
+        <input type="range" min="6" max="20" value="10" oninput="updateSize('config', this.value)">
+    </div>
+    <div class="control-group">
+        <label>Название:</label>
+        <input type="range" min="8" max="24" value="12" oninput="updateSize('name', this.value)">
+    </div>
+    <div class="control-group">
+        <label>Порядковый номер:</label>
+        <input type="range" min="8" max="24" value="12" oninput="updateSize('number', this.value)">
+    </div>
+    <div class="control-group">
+        <label>Атомная масса:</label>
+        <input type="range" min="8" max="24" value="12" oninput="updateSize('mass', this.value)">
+    </div>
+</div>
+
+<div class="periodic-table">
+    <div class="cell header" style="grid-column: span 2;">Периоды</div>
+    <div class="cell header">I</div>
+    <div class="cell header">II</div>
+    <div class="cell header">III</div>
+    <div class="cell header">IV</div>
+    <div class="cell header">V</div>
+    <div class="cell header">VI</div>
+    <div class="cell header">VII</div>
+    <div class="cell header">VIII</div>
+
+    <div class="cell period-num">1</div>
+    <div class="cell period-num">1</div>
+    <div class="cell">
+        <div class="top-row">
+            <div class="config">1s¹</div>
+            <div class="number">1</div>
+        </div>
+        <div class="symbol">H</div>
+        <div class="bottom-row">
+            <span class="name">Водород</span>
+            <span class="mass">1,00797</span>
+        </div>
+    </div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell">
+        <div class="top-row">
+            <div class="config">1s²</div>
+            <div class="number">2</div>
+        </div>
+        <div class="symbol">He</div>
+        <div class="bottom-row">
+            <span class="name">Гелий</span>
+            <span class="mass">4,0026</span>
+        </div>
+    </div>
+
+    <div class="cell period-num">2</div>
+    <div class="cell period-num">2</div>
+    <div class="cell">
+        <div class="top-row">
+            <div class="config">2s¹</div>
+            <div class="number">3</div>
+        </div>
+        <div class="symbol">Li</div>
+        <div class="bottom-row">
+            <span class="name">Литий</span>
+            <span class="mass">6,939</span>
+        </div>
+    </div>
+    <div class="cell">
+        <div class="top-row">
+            <div class="config">2s²</div>
+            <div class="number">4</div>
+        </div>
+        <div class="symbol">Be</div>
+        <div class="bottom-row">
+            <span class="name">Бериллий</span>
+            <span class="mass">9,0122</span>
+        </div>
+    </div>
+    <div class="cell">
+        <div class="top-row">
+            <div class="config">2s²2p¹</div>
+            <div class="number">5</div>
+        </div>
+        <div class="symbol">B</div>
+        <div class="bottom-row">
+            <span class="name">Бор</span>
+            <span class="mass">10,811</span>
+        </div>
+    </div>
+    </div>
+
+<script>
+    // Функция изменения размеров
+    function updateSize(type, val) {
+        document.documentElement.style.setProperty(`--size-${type}`, val + 'px');
+    }
+
+    // Загрузка пользовательского шрифта
+    document.getElementById('fontPicker').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const newFont = new FontFace('CustomFont', event.target.result);
+                newFont.load().then(function(loadedFont) {
+                    document.fonts.add(loadedFont);
+                    document.documentElement.style.setProperty('--main-font', 'CustomFont');
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    });
+</script>
+
+</body>
+</html>
