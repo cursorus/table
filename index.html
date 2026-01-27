@@ -2,183 +2,158 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mendeleev Table Custom Layout</title>
+    <title>Mendeleev Table Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --font-main: 'Arial', sans-serif;
-            --sz-symbol: 26px;
-            --sz-name: 13px;
-            --sz-mass: 11px;
+            --f-main: 'Arial', sans-serif;
+            --s-sym: 26px;
+            --s-nam: 13px;
+            --s-mas: 11px;
         }
 
-        body { font-family: var(--font-main); background: #fff; padding: 20px; }
+        body { font-family: var(--f-main); background: #fff; padding: 20px; color: #000; }
 
-        /* Панель управления */
-        .controls {
-            background: #f4f7f6; padding: 20px; border-radius: 10px;
-            display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;
-            border: 1px solid #ddd; align-items: center;
+        .panel {
+            background: #f0f2f5; padding: 20px; border-radius: 12px;
+            display: flex; flex-wrap: wrap; gap: 25px; margin-bottom: 30px;
+            border: 1px solid #ddd; align-items: center; position: sticky; top: 0; z-index: 100;
         }
-        .ctrl-item { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: bold; }
-        input[type="range"] { width: 120px; }
+        .c-item { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: bold; }
+        input[type="range"] { width: 130px; }
 
-        /* Сетка: 1 колонка для номера ряда + 8 для групп */
-        #table-container {
+        /* Сетка: 1 для номера + 8 для групп */
+        #table-area {
             display: grid;
-            grid-template-columns: 40px repeat(8, 120px);
-            /* Задаем 15 строк (1 заголовок + 15 рядов) */
-            grid-template-rows: 40px repeat(15, auto);
-            gap: 15px;
+            grid-template-columns: 50px repeat(8, 120px);
+            grid-template-rows: 40px repeat(15, minmax(80px, auto));
             background: white;
             padding: 20px;
             width: fit-content;
         }
 
-        .header { font-weight: bold; font-size: 20px; color: #bbb; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .row-label { display: flex; align-items: center; justify-content: center; color: #ddd; font-weight: bold; border-right: 1px solid #eee; }
+        .h-col { font-weight: bold; font-size: 22px; color: #ccc; border-bottom: 1px solid #eee; text-align: center; }
+        .h-row { display: flex; align-items: center; justify-content: center; color: #ddd; font-weight: bold; border-right: 2px solid #f9f9f9; font-size: 18px; }
 
-        /* Ячейка элемента */
-        .cell {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            text-align: left;
-            padding: 5px;
-        }
+        .cell { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 8px; }
+        
+        /* Контейнер для триад в 8-м столбике */
+        .stack { display: flex; flex-direction: column; gap: 15px; width: 100%; }
 
-        /* Контейнер для нескольких элементов в одной группе (например, VIII группа) */
-        .stack { display: flex; flex-direction: column; gap: 20px; }
+        .sym { font-size: var(--s-sym); font-weight: bold; line-height: 1; margin-bottom: 4px; }
+        .nam { font-size: var(--s-nam); line-height: 1.1; }
+        .mas { font-size: var(--s-mas); color: #666; margin-top: 2px; }
 
-        .s { font-size: var(--sz-symbol); font-weight: bold; line-height: 1; margin-bottom: 4px; }
-        .n { font-size: var(--sz-name); line-height: 1.1; }
-        .m { font-size: var(--sz-mass); color: #777; margin-top: 2px; }
-
-        button { background: #000; color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-weight: bold; }
-        button:hover { background: #333; }
+        button.dl { background: #000; color: #fff; border: none; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <div class="ctrl-item">
-        Шрифт: <input type="file" id="fontLoader" accept=".ttf,.otf,.woff">
-    </div>
-    <div class="ctrl-item">
-        Символ: <input type="range" min="10" max="60" value="26" oninput="upd('symbol', this.value)">
-    </div>
-    <div class="ctrl-item">
-        Название: <input type="range" min="8" max="30" value="13" oninput="upd('name', this.value)">
-    </div>
-    <div class="ctrl-item">
-        Масса: <input type="range" min="8" max="30" value="11" oninput="upd('mass', this.value)">
-    </div>
-    <button onclick="download()">Скачать JPG</button>
+<div class="panel">
+    <div class="c-item">Шрифт: <input type="file" id="fontUp" accept=".ttf,.otf"></div>
+    <div class="c-item">Символ: <input type="range" min="10" max="70" value="26" oninput="upd('sym', this.value)"></div>
+    <div class="c-item">Название: <input type="range" min="8" max="40" value="13" oninput="upd('nam', this.value)"></div>
+    <div class="c-item">Масса: <input type="range" min="8" max="40" value="11" oninput="upd('mas', this.value)"></div>
+    <button class="dl" onclick="save()">Скачать JPG</button>
 </div>
 
-<div id="table-container">
+<div id="table-area">
     <div></div>
-    <div class="header">I</div><div class="header">II</div><div class="header">III</div>
-    <div class="header">IV</div><div class="header">V</div><div class="header">VI</div>
-    <div class="header">VII</div><div class="header">VIII</div>
+    <div class="h-col">I</div><div class="h-col">II</div><div class="h-col">III</div>
+    <div class="h-col">IV</div><div class="h-col">V</div><div class="h-col">VI</div>
+    <div class="h-col">VII</div><div class="h-col">VIII</div>
 </div>
 
 <script>
-    const upd = (t, v) => document.documentElement.style.setProperty(`--sz-${t}`, v + 'px');
+    const upd = (t, v) => document.documentElement.style.setProperty(`--s-${t}`, v + 'px');
 
-    // База элементов (Символ, Имя, Масса, Группа(1-8), Ряд(1-15))
+    // База элементов [Символ, Название, Масса, Группа, Ряд]
     const elements = [
         ["H", "водород", "1.008", 1, 1], ["He", "гелий", "4.002", 8, 1],
         ["Li", "литий", "6.94", 1, 2], ["Be", "бериллий", "9.01", 2, 2], ["B", "бор", "10.81", 3, 2], ["C", "углерод", "12.01", 4, 2], ["N", "азот", "14.00", 5, 2], ["O", "кислород", "15.99", 6, 2], ["F", "фтор", "18.99", 7, 2], ["Ne", "неон", "20.18", 8, 2],
         ["Na", "натрий", "22.99", 1, 3], ["Mg", "магний", "24.30", 2, 3], ["Al", "алюминий", "26.98", 3, 3], ["Si", "кремний", "28.08", 4, 3], ["P", "фосфор", "30.97", 5, 3], ["S", "сера", "32.06", 6, 3], ["Cl", "хлор", "35.45", 7, 3], ["Ar", "аргон", "39.94", 8, 3],
         
-        // Ряд 4 (K - Mn) + Триада (Fe, Co, Ni)
+        // Ряды 4-5
         ["K", "калий", "39.09", 1, 4], ["Ca", "кальций", "40.07", 2, 4], ["Sc", "скандий", "44.95", 3, 4], ["Ti", "титан", "47.86", 4, 4], ["V", "ванадий", "50.94", 5, 4], ["Cr", "хром", "51.99", 6, 4], ["Mn", "марганец", "54.93", 7, 4],
-        ["Fe, Co, Ni", "", "", 8, 4, true], // Специальная метка для триады
-
-        // Ряд 5 (Cu - Kr)
+        ["Fe, Co, Ni", "", "", 8, 4, true],
         ["Cu", "медь", "63.54", 1, 5], ["Zn", "цинк", "65.38", 2, 5], ["Ga", "галлий", "69.72", 3, 5], ["Ge", "германий", "72.63", 4, 5], ["As", "мышьяк", "74.92", 5, 5], ["Se", "селен", "78.97", 6, 5], ["Br", "бром", "79.90", 7, 5], ["Kr", "криптон", "83.79", 8, 5],
 
-        // Ряд 6 (Rb - Tc) + Триада (Ru, Rh, Pd)
+        // Ряды 6-7
         ["Rb", "рубидий", "85.46", 1, 6], ["Sr", "стронций", "87.62", 2, 6], ["Y", "иттрий", "88.90", 3, 6], ["Zr", "цирконий", "91.22", 4, 6], ["Nb", "ниобий", "92.90", 5, 6], ["Mo", "молибден", "95.95", 6, 6], ["Tc", "технеций", "98", 7, 6],
         ["Ru, Rh, Pd", "", "", 8, 6, true],
-
-        // Ряд 7 (Ag - Xe)
         ["Ag", "серебро", "107.8", 1, 7], ["Cd", "кадмий", "112.4", 2, 7], ["In", "индий", "114.8", 3, 7], ["Sn", "олово", "118.7", 4, 7], ["Sb", "сурьма", "121.7", 5, 7], ["Te", "теллур", "127.6", 6, 7], ["I", "йод", "126.9", 7, 7], ["Xe", "ксенон", "131.2", 8, 7],
 
-        // Ряд 8 (Cs - Re) + Триада (Os, Ir, Pt)
+        // Ряды 8-9
         ["Cs", "цезий", "132.9", 1, 8], ["Ba", "барий", "137.3", 2, 8], ["La*", "лантан", "138.9", 3, 8], ["Hf", "гафний", "178.4", 4, 8], ["Ta", "тантал", "180.9", 5, 8], ["W", "вольфрам", "183.8", 6, 8], ["Re", "рений", "186.2", 7, 8],
         ["Os, Ir, Pt", "", "", 8, 8, true],
-
-        // Ряд 9 (Au - Rn)
         ["Au", "золото", "196.9", 1, 9], ["Hg", "ртуть", "200.5", 2, 9], ["Tl", "таллий", "204.3", 3, 9], ["Pb", "свинец", "207.2", 4, 9], ["Bi", "висмут", "208.9", 5, 9], ["Po", "полоний", "209", 6, 9], ["At", "астат", "210", 7, 9], ["Rn", "радон", "222", 8, 9],
 
-        // Ряд 10 (Fr, Ra, Ac)
-        ["Fr", "франций", "223", 1, 10], ["Ra", "радий", "226", 2, 10], ["Ac**", "актиний", "227", 3, 10]
+        // Ряд 10 (7-й период): ДОЗАПОЛНЕНО
+        ["Fr", "франций", "223", 1, 10], ["Ra", "радий", "226", 2, 10], ["Ac**", "актиний", "227", 3, 10],
+        ["Rf", "резерфордий", "267", 4, 10], ["Db", "дубний", "268", 5, 10], ["Sg", "сиборгий", "269", 6, 10], ["Bh", "борий", "270", 7, 10],
+        ["Hs, Mt, Ds", "", "", 8, 10, true]
     ];
 
     const triads = {
         "Fe, Co, Ni": [["Fe", "железо", "55.8"], ["Co", "кобальт", "58.9"], ["Ni", "никель", "58.6"]],
         "Ru, Rh, Pd": [["Ru", "рутений", "101.0"], ["Rh", "родий", "102.9"], ["Pd", "палладий", "106.4"]],
-        "Os, Ir, Pt": [["Os", "осмий", "190.2"], ["Ir", "иридий", "192.2"], ["Pt", "платина", "195.0"]]
+        "Os, Ir, Pt": [["Os", "осмий", "190.2"], ["Ir", "иридий", "192.2"], ["Pt", "платина", "195.0"]],
+        "Hs, Mt, Ds": [["Hs", "хассий", "277"], ["Mt", "мейтнерий", "278"], ["Ds", "дармштадтий", "281"]]
     };
 
-    const container = document.getElementById('table-container');
+    const container = document.getElementById('table-area');
 
     function render() {
-        // Создаем номера рядов 1-15
-        for (let i = 1; i <= 15; i++) {
-            const lbl = document.createElement('div');
-            lbl.className = 'row-label';
-            lbl.innerText = i;
-            lbl.style.gridColumn = 1;
-            lbl.style.gridRow = i + 1;
-            container.appendChild(lbl);
+        // Ряды 1-15
+        for (let r = 1; r <= 15; r++) {
+            const num = document.createElement('div');
+            num.className = 'h-row';
+            num.innerText = r;
+            num.style.gridColumn = 1;
+            num.style.gridRow = r + 1;
+            container.appendChild(num);
         }
 
-        // Рисуем элементы
         elements.forEach(item => {
             const cell = document.createElement('div');
             cell.className = 'cell';
             cell.style.gridColumn = item[3] + 1;
             cell.style.gridRow = item[4] + 1;
 
-            if (item[5]) { // Если это триада
-                const stack = document.createElement('div');
-                stack.className = 'stack';
+            if (item[5]) { // Рендер триады
+                const st = document.createElement('div');
+                st.className = 'stack';
                 triads[item[0]].forEach(t => {
-                    const el = document.createElement('div');
-                    el.innerHTML = `<div class="s">${t[0]}</div><div class="n">${t[1].toLowerCase()}</div><div class="m">${t[2]}</div>`;
-                    stack.appendChild(el);
+                    const d = document.createElement('div');
+                    d.innerHTML = `<div class="sym">${t[0]}</div><div class="nam">${t[1].toLowerCase()}</div><div class="mas">${t[2]}</div>`;
+                    st.appendChild(d);
                 });
-                cell.appendChild(stack);
+                cell.appendChild(st);
             } else {
-                cell.innerHTML = `<div class="s">${item[0]}</div><div class="n">${item[1].toLowerCase()}</div><div class="m">${item[2]}</div>`;
+                cell.innerHTML = `<div class="sym">${item[0]}</div><div class="nam">${item[1].toLowerCase()}</div><div class="mas">${item[2]}</div>`;
             }
             container.appendChild(cell);
         });
     }
 
-    // Загрузка своего шрифта
-    document.getElementById('fontLoader').onchange = function(e) {
-        const file = e.target.files[0];
+    document.getElementById('fontUp').onchange = e => {
         const reader = new FileReader();
-        reader.onload = function(ev) {
-            const f = new FontFace('CustomFont', ev.target.result);
-            f.load().then(font => {
-                document.fonts.add(font);
-                document.body.style.fontFamily = 'CustomFont';
+        reader.onload = ev => {
+            const f = new FontFace('Custom', ev.target.result);
+            f.load().then(loaded => {
+                document.fonts.add(loaded);
+                document.body.style.fontFamily = 'Custom';
             });
         };
-        reader.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(e.target.files[0]);
     };
 
-    function download() {
-        html2canvas(container, { scale: 2, backgroundColor: "#fff" }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'table.jpg';
-            link.href = canvas.toDataURL("image/jpeg", 0.9);
-            link.click();
+    function save() {
+        html2canvas(container, { scale: 2, backgroundColor: "#fff" }).then(c => {
+            const a = document.createElement('a');
+            a.download = 'mendeleev_layout.jpg';
+            a.href = c.toDataURL("image/jpeg", 0.9);
+            a.click();
         });
     }
 
