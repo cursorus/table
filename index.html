@@ -2,140 +2,152 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mendeleev Short Form</title>
+    <title>Полная Короткая Таблица</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --main-font: 'Arial', sans-serif;
-            --sz-sym: 26px;
-            --sz-nam: 13px;
-            --sz-mas: 11px;
+            --sz-s: 24px; --sz-n: 13px; --sz-m: 11px;
         }
-
-        body { font-family: var(--main-font); background: #fff; padding: 10px; }
-
-        .controls {
-            position: sticky; top: 0; z-index: 100;
-            background: #fdfdfd; padding: 15px; border-bottom: 2px solid #eee;
-            display: flex; flex-wrap: wrap; gap: 15px; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        body { font-family: var(--main-font); background: #fff; padding: 20px; }
+        
+        .panel {
+            position: sticky; top: 0; z-index: 99; background: #f8f9fa;
+            padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end;
         }
+        .c-grp { display: flex; flex-direction: column; font-size: 12px; font-weight: bold; }
+        input[type=range] { width: 100px; }
+        button { background: #333; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; height: 30px; }
 
-        .ctrl-grp { display: flex; flex-direction: column; font-size: 11px; font-weight: bold; }
-
-        /* Таблица на 8 колонок + 1 колонка для номера периода */
-        #table-wrapper {
+        #grid-box {
             display: grid;
-            grid-template-columns: 40px repeat(8, 110px);
-            background: white;
-            padding: 20px;
+            grid-template-columns: 30px repeat(8, 105px); /* Номер ряда + 8 групп */
+            gap: 10px;
+            padding: 20px; background: white;
             width: fit-content;
         }
 
-        .header { font-weight: bold; font-size: 20px; color: #ccc; padding: 10px; border-bottom: 1px solid #eee; }
-        .row-num { display: flex; align-items: center; justify-content: center; color: #ddd; font-weight: bold; border-right: 1px solid #f9f9f9; }
+        .h-col { font-weight: bold; text-align: center; color: #999; padding-bottom: 5px; border-bottom: 2px solid #eee; }
+        .h-row { font-weight: bold; text-align: center; color: #999; padding-right: 5px; border-right: 2px solid #eee; display: flex; align-items: center; justify-content: center;}
 
-        .cell {
-            padding: 10px 5px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            text-align: left;
-            min-height: 80px;
+        /* Обычная ячейка */
+        .el {
+            display: flex; flex-direction: column; align-items: flex-start;
+            padding: 5px; min-height: 70px;
+        }
+        /* Ячейка для триад (VIII группа) */
+        .triad-container {
+            display: flex; flex-direction: column; gap: 15px; padding: 5px;
         }
 
-        .sym { font-size: var(--sz-sym); font-weight: bold; line-height: 1; margin-bottom: 4px; }
-        .nam { font-size: var(--sz-nam); line-height: 1.1; }
-        .mas { font-size: var(--sz-mas); color: #666; margin-top: 2px; }
-
-        button { background: #000; color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+        .s { font-size: var(--sz-s); font-weight: 900; line-height: 1; }
+        .n { font-size: var(--sz-n); line-height: 1.1; margin-top: 2px; }
+        .m { font-size: var(--sz-m); opacity: 0.6; margin-top: 2px; }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <div class="ctrl-grp">Шрифт: <input type="file" id="fontUp" accept=".ttf,.otf"></div>
-    <div class="ctrl-grp">Символ: <input type="range" min="10" max="70" value="26" oninput="change('sz-sym', this.value)"></div>
-    <div class="ctrl-grp">Имя: <input type="range" min="8" max="30" value="13" oninput="change('sz-nam', this.value)"></div>
-    <div class="ctrl-grp">Масса: <input type="range" min="8" max="30" value="11" oninput="change('sz-mas', this.value)"></div>
-    <button onclick="takeShot()">Скачать JPG</button>
+<div class="panel">
+    <div class="c-grp">Шрифт: <input type="file" id="fUp" accept=".ttf,.otf"></div>
+    <div class="c-grp">Симв: <input type="range" min="14" max="50" value="24" oninput="set('s',this.value)"></div>
+    <div class="c-grp">Имя: <input type="range" min="8" max="24" value="13" oninput="set('n',this.value)"></div>
+    <div class="c-grp">Масса: <input type="range" min="8" max="24" value="11" oninput="set('m',this.value)"></div>
+    <button onclick="saveJPG()">Скачать JPG</button>
 </div>
 
-<div id="table-wrapper">
-    <div></div>
-    <div class="header">I</div><div class="header">II</div><div class="header">III</div>
-    <div class="header">IV</div><div class="header">V</div><div class="header">VI</div>
-    <div class="header">VII</div><div class="header">VIII</div>
-
+<div id="grid-box">
+    <div></div><div class="h-col">I</div><div class="h-col">II</div><div class="h-col">III</div>
+    <div class="h-col">IV</div><div class="h-col">V</div><div class="h-col">VI</div>
+    <div class="h-col">VII</div><div class="h-col">VIII</div>
     </div>
 
 <script>
-    const change = (id, v) => document.documentElement.style.setProperty(`--${id}`, v + 'px');
+    const set = (t,v) => document.documentElement.style.setProperty(`--sz-${t}`, v+'px');
+    const box = document.getElementById('grid-box');
 
-    // Массив: [Символ, Название, Масса, Колонка(1-8), Ряд(абсолютный)]
-    const elements = [
-        ["H", "водород", "1.008", 1, 1], ["He", "гелий", "4.002", 8, 1],
-        ["Li", "литий", "6.94", 1, 2], ["Be", "бериллий", "9.01", 2, 2], ["B", "бор", "10.81", 3, 2], ["C", "углерод", "12.01", 4, 2], ["N", "азот", "14.00", 5, 2], ["O", "кислород", "15.99", 6, 2], ["F", "фтор", "18.99", 7, 2], ["Ne", "неон", "20.18", 8, 2],
-        ["Na", "натрий", "22.99", 1, 3], ["Mg", "магний", "24.30", 2, 3], ["Al", "алюминий", "26.98", 3, 3], ["Si", "кремний", "28.08", 4, 3], ["P", "фосфор", "30.97", 5, 3], ["S", "сера", "32.06", 6, 3], ["Cl", "хлор", "35.45", 7, 3], ["Ar", "аргон", "39.94", 8, 3],
-        // Период 4 (Ряд 4 и 5)
-        ["K", "калий", "39.09", 1, 4], ["Ca", "кальций", "40.07", 2, 4], ["Sc", "скандий", "44.95", 3, 4], ["Ti", "титан", "47.86", 4, 4], ["V", "ванадий", "50.94", 5, 4], ["Cr", "хром", "51.99", 6, 4], ["Mn", "марганец", "54.93", 7, 4], ["Fe", "железо", "55.84", 8, 4], ["Co", "кобальт", "58.93", 8, 4], ["Ni", "никель", "58.69", 8, 4],
-        ["Cu", "медь", "63.54", 1, 5], ["Zn", "цинк", "65.38", 2, 5], ["Ga", "галлий", "69.72", 3, 5], ["Ge", "германий", "72.63", 4, 5], ["As", "мышьяк", "74.92", 5, 5], ["Se", "селен", "78.97", 6, 5], ["Br", "бром", "79.90", 7, 5], ["Kr", "криптон", "83.79", 8, 5],
-        // Период 5 (Ряд 6 и 7)
-        ["Rb", "рубидий", "85.46", 1, 6], ["Sr", "стронций", "87.62", 2, 6], ["Y", "иттрий", "88.90", 3, 6], ["Zr", "цирконий", "91.22", 4, 6], ["Nb", "ниобий", "92.90", 5, 6], ["Mo", "молибден", "95.95", 6, 6], ["Tc", "технеций", "98", 7, 6], ["Ru", "рутений", "101.07", 8, 6], ["Rh", "родий", "102.90", 8, 6], ["Pd", "палладий", "106.42", 8, 6],
-        ["Ag", "серебро", "107.86", 1, 7], ["Cd", "кадмий", "112.41", 2, 7], ["In", "индий", "114.81", 3, 7], ["Sn", "олово", "118.71", 4, 7], ["Sb", "сурьма", "121.76", 5, 7], ["Te", "теллур", "127.60", 6, 7], ["I", "йод", "126.90", 7, 7], ["Xe", "ксенон", "131.29", 8, 7],
-        // Период 6 (Ряд 8 и 9)
-        ["Cs", "цезий", "132.90", 1, 8], ["Ba", "барий", "137.32", 2, 8], ["La*", "лантан", "138.90", 3, 8], ["Hf", "гафний", "178.49", 4, 8], ["Ta", "тантал", "180.94", 5, 8], ["W", "вольфрам", "183.84", 6, 8], ["Re", "рений", "186.20", 7, 8], ["Os", "осмий", "190.23", 8, 8], ["Ir", "иридий", "192.21", 8, 8], ["Pt", "платина", "195.08", 8, 8],
-        ["Au", "золото", "196.96", 1, 9], ["Hg", "ртуть", "200.59", 2, 9], ["Tl", "таллий", "204.38", 3, 9], ["Pb", "свинец", "207.2", 4, 9], ["Bi", "висмут", "208.98", 5, 9], ["Po", "полоний", "209", 6, 9], ["At", "астат", "210", 7, 9], ["Rn", "радон", "222", 8, 9]
+    // Данные: [Символ, Название, Масса, Колонка, Ряд, ЭтоТриада?]
+    // Полный список 118 элементов для короткой формы
+    const fullData = [
+        ["H","водород","1.008",1,1],["He","гелий","4.002",8,1],
+        ["Li","литий","6.94",1,2],["Be","бериллий","9.01",2,2],["B","бор","10.81",3,2],["C","углерод","12.01",4,2],["N","азот","14.01",5,2],["O","кислород","16.00",6,2],["F","фтор","19.00",7,2],["Ne","неон","20.18",8,2],
+        ["Na","натрий","22.99",1,3],["Mg","магний","24.30",2,3],["Al","алюминий","26.98",3,3],["Si","кремний","28.09",4,3],["P","фосфор","30.97",5,3],["S","сера","32.06",6,3],["Cl","хлор","35.45",7,3],["Ar","аргон","39.95",8,3],
+        
+        // Период 4 (Ряды 4 и 5)
+        ["K","калий","39.10",1,4],["Ca","кальций","40.08",2,4],["Sc","скандий","44.96",3,4],["Ti","титан","47.87",4,4],["V","ванадий","50.94",5,4],["Cr","хром","52.00",6,4],["Mn","марганец","54.94",7,4],
+        ["Fe","железо","55.85",8,4,true],["Co","кобальт","58.93",8,4,true],["Ni","никель","58.69",8,4,true], // Триада
+        ["Cu","медь","63.55",1,5],["Zn","цинк","65.38",2,5],["Ga","галлий","69.72",3,5],["Ge","германий","72.63",4,5],["As","мышьяк","74.92",5,5],["Se","селен","78.97",6,5],["Br","бром","79.90",7,5],["Kr","криптон","83.80",8,5],
+
+        // Период 5 (Ряды 6 и 7)
+        ["Rb","рубидий","85.47",1,6],["Sr","стронций","87.62",2,6],["Y","иттрий","88.91",3,6],["Zr","цирконий","91.22",4,6],["Nb","ниобий","92.91",5,6],["Mo","молибден","95.95",6,6],["Tc","технеций","98",7,6],
+        ["Ru","рутений","101.1",8,6,true],["Rh","родий","102.9",8,6,true],["Pd","палладий","106.4",8,6,true], // Триада
+        ["Ag","серебро","107.9",1,7],["Cd","кадмий","112.4",2,7],["In","индий","114.8",3,7],["Sn","олово","118.7",4,7],["Sb","сурьма","121.8",5,7],["Te","теллур","127.6",6,7],["I","йод","126.9",7,7],["Xe","ксенон","131.3",8,7],
+
+        // Период 6 (Ряды 8 и 9)
+        ["Cs","цезий","132.9",1,8],["Ba","барий","137.3",2,8],["La*","лантан","138.9",3,8],["Hf","гафний","178.5",4,8],["Ta","тантал","180.9",5,8],["W","вольфрам","183.8",6,8],["Re","рений","186.2",7,8],
+        ["Os","осмий","190.2",8,8,true],["Ir","иридий","192.2",8,8,true],["Pt","платина","195.1",8,8,true], // Триада
+        ["Au","золото","197.0",1,9],["Hg","ртуть","200.6",2,9],["Tl","таллий","204.4",3,9],["Pb","свинец","207.2",4,9],["Bi","висмут","209.0",5,9],["Po","полоний","209",6,9],["At","астат","210",7,9],["Rn","радон","222",8,9],
+
+        // Период 7 (Ряды 10 и 11) - ВОТ ОНИ, ПРОПАВШИЕ РЯДЫ
+        ["Fr","франций","223",1,10],["Ra","радий","226",2,10],["Ac**","актиний","227",3,10],["Rf","резерфордий","267",4,10],["Db","дубний","268",5,10],["Sg","сиборгий","269",6,10],["Bh","борий","270",7,10],
+        ["Hs","хассий","277",8,10,true],["Mt","мейтнерий","278",8,10,true],["Ds","дармштадтий","281",8,10,true], // Триада
+        ["Rg","рентгений","282",1,11],["Cn","коперниций","285",2,11],["Nh","нихоний","286",3,11],["Fl","флеровий","289",4,11],["Mc","московий","290",5,11],["Lv","ливерморий","293",6,11],["Ts","теннессин","294",7,11],["Og","оганесон","294",8,11]
     ];
 
-    const wrapper = document.getElementById('table-wrapper');
-
-    // Отрисовка
     function render() {
-        // Создаем пустые ячейки для рядов (номера периодов)
-        for(let r=1; r<=9; r++) {
-            const num = document.createElement('div');
-            num.className = 'row-num';
-            num.innerText = r;
-            num.style.gridRow = r + 1;
-            num.style.gridColumn = 1;
-            wrapper.appendChild(num);
+        // Создаем номера рядов (1-11)
+        for(let i=1; i<=11; i++){
+            let rowNum = document.createElement('div');
+            rowNum.className = 'h-row'; rowNum.innerText = i;
+            rowNum.style.gridColumn = 1; rowNum.style.gridRow = i+1;
+            box.appendChild(rowNum);
         }
 
-        elements.forEach(el => {
-            const div = document.createElement('div');
-            div.className = 'cell';
-            div.style.gridColumn = el[3] + 1;
-            div.style.gridRow = el[4] + 1;
+        // Рендерим элементы
+        fullData.forEach(data => {
+            let cell;
+            // Проверка на триаду: если это триада, ищем, есть ли уже контейнер в этой ячейке
+            if(data[5]) { 
+                let selector = `.triad-container[style*="grid-column: ${data[3]+1}"][style*="grid-row: ${data[4]+1}"]`;
+                cell = box.querySelector(selector);
+                if(!cell) {
+                    cell = document.createElement('div');
+                    cell.className = 'triad-container';
+                    cell.style.gridColumn = data[3] + 1;
+                    cell.style.gridRow = data[4] + 1;
+                    box.appendChild(cell);
+                }
+            } else {
+                cell = document.createElement('div');
+                cell.className = 'el';
+                cell.style.gridColumn = data[3] + 1;
+                cell.style.gridRow = data[4] + 1;
+                box.appendChild(cell);
+            }
 
-            div.innerHTML = `
-                <div class="sym">${el[0]}</div>
-                <div class="nam">${el[1].toLowerCase()}</div>
-                <div class="mas">${el[2]}</div>
-            `;
-            wrapper.appendChild(div);
+            const elBlock = document.createElement('div');
+            elBlock.className = 'el';
+            if(data[5]) elBlock.style.padding = '0'; // Убираем отступы внутри триады
+            elBlock.innerHTML = `<div class="s">${data[0]}</div><div class="n">${data[1]}</div><div class="m">${data[2]}</div>`;
+            cell.appendChild(elBlock);
         });
     }
 
-    // Шрифт
-    document.getElementById('fontUp').onchange = function(e) {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            const f = new FontFace('Custom', ev.target.result);
-            f.load().then(font => {
-                document.fonts.add(font);
-                document.body.style.fontFamily = 'Custom';
+    // Загрузка шрифта
+    document.getElementById('fUp').onchange = e => {
+        const fr = new FileReader();
+        fr.onload = ev => {
+            new FontFace('CuFont', ev.target.result).load().then(f => {
+                document.fonts.add(f); document.body.style.fontFamily = 'CuFont';
             });
         };
-        reader.readAsArrayBuffer(this.files[0]);
-    };
+        fr.readAsArrayBuffer(e.target.files[0]);
+    }
 
-    function takeShot() {
-        html2canvas(document.getElementById('table-wrapper'), { scale: 2 }).then(canvas => {
-            const a = document.createElement('a');
-            a.download = 'table.jpg';
-            a.href = canvas.toDataURL("image/jpeg", 0.9);
-            a.click();
+    function saveJPG() {
+        html2canvas(box, {scale:2, backgroundColor: '#fff'}).then(c => {
+            let a = document.createElement('a'); a.download='mendeleev_full.jpg';
+            a.href=c.toDataURL('image/jpeg', 0.9); a.click();
         });
     }
 
