@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="ru">
+<!DOCTYPE html><html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Mendeleev Full & Simple</title>
@@ -27,7 +26,8 @@
         }
         .h-col { font-weight: bold; font-size: 20px; color: #bbb; border-bottom: 2px solid #eee; text-align: center; }
         .h-row { display: flex; align-items: center; justify-content: center; color: #ddd; font-weight: bold; border-right: 2px solid #f9f9f9; }
-        .cell { display: flex; flex-direction: column; padding: 10px; border: 0.5px solid #f0f0f0; }
+        .cell { display: flex; flex-direction: column; padding: 10px; border: 0.5px solid #f0f0f0; cursor: pointer; transition: background 0.2s; }
+        .cell:hover { background: #f0faff; }
         .sym-row { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
         .sym { font-size: var(--s-sym); font-weight: 800; line-height: 1; color: #1a1a1a; }
         .ox { font-size: var(--s-ox); color: #e63946; font-weight: bold; background: #fff1f2; padding: 2px 4px; border-radius: 4px; }
@@ -35,6 +35,12 @@
         .mas { font-size: var(--s-mas); color: #999; margin-top: 2px; }
         .stack { display: flex; flex-direction: column; gap: 12px; }
         button.dl { background: #1a1a1a; color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-weight: bold; margin-left: auto; }
+        .edit-btn { background: #007bff; }
+        
+        /* Modal for editing */
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid #000; z-index: 1000; box-shadow: 0 0 20px rgba(0,0,0,0.5); border-radius: 8px; }
+        #modal input { display: block; margin-bottom: 10px; width: 100%; padding: 5px; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index: 999; }
     </style>
 </head>
 <body>
@@ -43,6 +49,8 @@
     <div class="c-item">Шрифт: <input type="file" id="fontUp"></div>
     <div class="c-item">Символ: <input type="range" min="15" max="60" value="28" oninput="upd('sym', this.value)"></div>
     <div class="c-item">Заряд: <input type="range" min="8" max="30" value="14" oninput="upd('ox', this.value)"></div>
+    <button class="dl edit-btn" onclick="downloadConfig()">Сохранить конфиг</button>
+    <div class="c-item">Загрузить: <input type="file" id="loadConfig" accept=".json"></div>
     <button class="dl" onclick="save()">Скачать JPG</button>
 </div>
 
@@ -53,10 +61,23 @@
     <div class="h-col">VII</div><div class="h-col">VIII</div>
 </div>
 
+<div class="overlay" id="overlay"></div>
+<div id="modal">
+    <h3 id="modal-title">Редактировать ячейку</h3>
+    <input type="text" id="edit-sym" placeholder="Символ (напр. H)">
+    <input type="text" id="edit-nam" placeholder="Название (напр. водород)">
+    <input type="text" id="edit-mas" placeholder="Масса (напр. 1.008)">
+    <input type="text" id="edit-ox" placeholder="Заряд (напр. +1)">
+    <div style="display:flex; gap: 10px;">
+        <button onclick="saveEdit()">OK</button>
+        <button onclick="closeModal()">Отмена</button>
+    </div>
+</div>
+
 <script>
     const upd = (t, v) => document.documentElement.style.setProperty(`--s-${t}`, v + 'px');
 
-    const elements = [
+    let currentElements = [
         ["H", "водород", "1.008", 1, 1, false, "+1/-1"], ["He", "гелий", "4.002", 8, 1, false, "0"],
         ["Li", "литий", "6.94", 1, 2, false, "+1"], ["Be", "бериллий", "9.01", 2, 2, false, "+2"], ["B", "бор", "10.81", 3, 2, false, "+3"], ["C", "углерод", "12.01", 4, 2, false, "-4"], ["N", "азот", "14.00", 5, 2, false, "-3"], ["O", "кислород", "15.99", 6, 2, false, "-2"], ["F", "фтор", "18.99", 7, 2, false, "-1"], ["Ne", "неон", "20.18", 8, 2, false, "0"],
         ["Na", "натрий", "22.99", 1, 3, false, "+1"], ["Mg", "магний", "24.30", 2, 3, false, "+2"], ["Al", "алюминий", "26.98", 3, 3, false, "+3"], ["Si", "кремний", "28.08", 4, 3, false, "-4"], ["P", "фосфор", "30.97", 5, 3, false, "-3"], ["S", "сера", "32.06", 6, 3, false, "-2"], ["Cl", "хлор", "35.45", 7, 3, false, "-1"], ["Ar", "аргон", "39.94", 8, 3, false, "0"],
@@ -81,22 +102,37 @@
     };
 
     const container = document.getElementById('table-area');
+    let activeCellPos = { col: 0, row: 0 };
 
     function render() {
+        // Очищаем, кроме заголовков
+        const headers = container.querySelectorAll('.h-col, div:first-child');
+        container.innerHTML = '';
+        headers.forEach(h => container.appendChild(h));
+
+        // Сетка пустых ячеек для клика
         for (let r = 1; r <= 15; r++) {
             const num = document.createElement('div');
             num.className = 'h-row';
             num.innerText = r;
             num.style.gridColumn = 1; num.style.gridRow = r + 1;
             container.appendChild(num);
+
+            for (let c = 1; c <= 8; c++) {
+                const empty = document.createElement('div');
+                empty.className = 'cell';
+                empty.style.gridColumn = c + 1;
+                empty.style.gridRow = r + 1;
+                empty.onclick = () => openModal(c, r);
+                container.appendChild(empty);
+            }
         }
 
-        elements.forEach(item => {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.style.gridColumn = item[3] + 1;
-            cell.style.gridRow = item[4] + 1;
-
+        currentElements.forEach(item => {
+            const cell = container.querySelector(`.cell[style*="grid-column: ${item[3] + 1}"][style*="grid-row: ${item[4] + 1}"]`);
+            if (!cell) return;
+            
+            cell.innerHTML = '';
             if (item[5]) {
                 const st = document.createElement('div');
                 st.className = 'stack';
@@ -113,10 +149,64 @@
                     <div class="nam">${item[1]}</div>
                     <div class="mas">${item[2]}</div>`;
             }
-            container.appendChild(cell);
         });
     }
 
+    // Modal Logic
+    function openModal(col, row) {
+        activeCellPos = { col, row };
+        const el = currentElements.find(e => e[3] === col && e[4] === row);
+        document.getElementById('modal-title').innerText = `Ячейка ${col}:${row}`;
+        document.getElementById('edit-sym').value = el ? el[0] : '';
+        document.getElementById('edit-nam').value = el ? el[1] : '';
+        document.getElementById('edit-mas').value = el ? el[2] : '';
+        document.getElementById('edit-ox').value = el ? (el[6] || '') : '';
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    function saveEdit() {
+        const sym = document.getElementById('edit-sym').value;
+        const nam = document.getElementById('edit-nam').value;
+        const mas = document.getElementById('edit-mas').value;
+        const ox = document.getElementById('edit-ox').value;
+
+        // Удаляем старую запись если была
+        currentElements = currentElements.filter(e => !(e[3] === activeCellPos.col && e[4] === activeCellPos.row));
+        
+        if (sym) {
+            currentElements.push([sym, nam, mas, activeCellPos.col, activeCellPos.row, false, ox]);
+        }
+        
+        render();
+        closeModal();
+    }
+
+    // Config Save/Load
+    function downloadConfig() {
+        const data = JSON.stringify(currentElements);
+        const blob = new Blob([data], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'mendeleev_config.json';
+        a.click();
+    }
+
+    document.getElementById('loadConfig').onchange = e => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+            currentElements = JSON.parse(ev.target.result);
+            render();
+        };
+        reader.readAsText(e.target.files[0]);
+    };
+
+    // Original Functions
     document.getElementById('fontUp').onchange = e => {
         const reader = new FileReader();
         reader.onload = ev => {
@@ -134,7 +224,7 @@
             a.click();
         });
     }
+
     render();
-</script>
-</body>
+</script></body>
 </html>
