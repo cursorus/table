@@ -1,13 +1,13 @@
 <!DOCTYPE html><html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mendeleev Full Editor</title>
+    <title>Mendeleev & Acids Editor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --f-main: 'Arial', sans-serif;
             --s-sym: 28px; --s-nam: 12px; --s-mas: 11px; --s-ox: 14px;
-            --cols: 8;
+            --cols: 9; /* Установил 9 по умолчанию */
         }
         body { font-family: var(--f-main); background: #fff; padding: 20px; color: #000; }
         .panel {
@@ -18,7 +18,7 @@
         .c-item { display: flex; flex-direction: column; gap: 4px; font-size: 11px; text-transform: uppercase; }
         #table-area {
             display: grid;
-            grid-template-columns: 50px repeat(var(--cols), 120px);
+            grid-template-columns: 50px repeat(var(--cols), 125px);
             background: white; padding: 10px; width: fit-content;
         }
         .h-col, .h-row { font-weight: bold; color: #bbb; display: flex; align-items: center; justify-content: center; }
@@ -26,17 +26,21 @@
         .h-row { width: 50px; font-size: 16px; border-right: 2px solid #eee; }
         .cell { 
             display: flex; flex-direction: column; padding: 10px; border: 0.5px solid #f0f0f0; 
-            cursor: pointer; min-height: 95px; box-sizing: border-box; background: #fff;
+            cursor: pointer; min-height: 100px; box-sizing: border-box; background: #fff;
+            justify-content: center;
         }
         .cell:hover { background: #f0f7ff; border-color: #007bff; }
         .sym-row { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
-        .sym { font-size: var(--s-sym); font-weight: 800; line-height: 1; color: #1a1a1a; }
+        .sym { font-size: var(--s-sym); font-weight: 800; line-height: 1.1; color: #1a1a1a; }
+        /* Стиль для подстрочных/надстрочных индексов в символе */
+        .sym sub { font-size: 0.5em; vertical-align: sub; }
+        .sym sup { font-size: 0.5em; vertical-align: super; }
+        
         .ox { font-size: var(--s-ox); color: #e63946; font-weight: bold; background: #fff1f2; padding: 2px 4px; border-radius: 4px; }
-        .nam { font-size: var(--s-nam); color: #444; margin-top: 5px; text-transform: lowercase; }
+        .nam { font-size: var(--s-nam); color: #444; margin-top: 5px; text-transform: lowercase; font-weight: bold; }
         .mas { font-size: var(--s-mas); color: #999; margin-top: 2px; }
-        .stack { display: flex; flex-direction: column; gap: 10px; }
+        
         button.dl { background: #1a1a1a; color: #fff; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; font-weight: bold; font-size: 12px; }
-        .add-btn { background: #007bff !important; }
         .save-cfg { background: #2a9d8f !important; margin-left: auto; }
 
         #modal-ov { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index: 1000; }
@@ -50,9 +54,9 @@
 
 <div class="panel">
     <div class="c-item">Шрифт: <input type="file" id="fontUp"></div>
-    <div class="c-item">Символ: <input type="range" min="15" max="60" value="28" oninput="upd('sym', this.value)"></div>
-    <button class="dl add-btn" onclick="addRow()">+ Строка</button>
-    <button class="dl add-btn" onclick="addCol()">+ Столбец</button>
+    <div class="c-item">Размер символа: <input type="range" min="15" max="60" value="28" oninput="upd('sym', this.value)"></div>
+    <button class="dl" onclick="addRow()">+ Строка</button>
+    <button class="dl" onclick="addCol()">+ Столбец</button>
     <div class="c-item">Конфиг: <input type="file" id="loadCfg" accept=".json"></div>
     <button class="dl save-cfg" onclick="saveConfig()">Сохранить конфиг</button>
     <button class="dl" onclick="saveJpg()">JPG</button>
@@ -63,9 +67,9 @@
 <div id="modal-ov">
     <div id="modal">
         <h4 style="margin:0 0 10px">Редактировать ячейку</h4>
-        <input type="text" id="ed-sym" placeholder="Символ">
+        <input type="text" id="ed-sym" placeholder="Символ (можно с <sup> и <sub>)">
         <input type="text" id="ed-nam" placeholder="Название">
-        <input type="text" id="ed-mas" placeholder="Масса">
+        <input type="text" id="ed-mas" placeholder="Кислота / Масса">
         <input type="text" id="ed-ox" placeholder="Заряд">
         <div class="modal-btns">
             <button onclick="applyEdit()" style="background:#1a1a1a; color:white">ОК</button>
@@ -76,31 +80,30 @@
 
 <script>
     const upd = (t, v) => document.documentElement.style.setProperty(`--s-${t}`, v + 'px');
-    let maxCols = 8, maxRows = 10;
+    let maxCols = 9, maxRows = 12;
     
-    // ВЕРНУЛ ВСЕ ЭЛЕМЕНТЫ
+    // Элементы + ДАННЫЕ С ФОТО В 9 СТОЛБИКЕ
     let elements = [
         ["H", "водород", "1.008", 1, 1, false, "+1/-1"], ["He", "гелий", "4.002", 8, 1, false, "0"],
         ["Li", "литий", "6.94", 1, 2, false, "+1"], ["Be", "бериллий", "9.01", 2, 2, false, "+2"], ["B", "бор", "10.81", 3, 2, false, "+3"], ["C", "углерод", "12.01", 4, 2, false, "-4"], ["N", "азот", "14.00", 5, 2, false, "-3"], ["O", "кислород", "15.99", 6, 2, false, "-2"], ["F", "фтор", "18.99", 7, 2, false, "-1"], ["Ne", "неон", "20.18", 8, 2, false, "0"],
         ["Na", "натрий", "22.99", 1, 3, false, "+1"], ["Mg", "магний", "24.30", 2, 3, false, "+2"], ["Al", "алюминий", "26.98", 3, 3, false, "+3"], ["Si", "кремний", "28.08", 4, 3, false, "-4"], ["P", "фосфор", "30.97", 5, 3, false, "-3"], ["S", "сера", "32.06", 6, 3, false, "-2"], ["Cl", "хлор", "35.45", 7, 3, false, "-1"], ["Ar", "аргон", "39.94", 8, 3, false, "0"],
-        ["K", "калий", "39.09", 1, 4, false, "+1"], ["Ca", "кальций", "40.07", 2, 4, false, "+2"], ["Sc", "скандий", "44.95", 3, 4, false, "+3"], ["Ti", "титан", "47.86", 4, 4, false, "+4"], ["V", "ванадий", "50.94", 5, 4, false, "+5"], ["Cr", "хром", "51.99", 6, 4, false, "+3"], ["Mn", "марганец", "54.93", 7, 4, false, "+2"],
-        ["Fe, Co, Ni", "", "", 8, 4, true],
-        ["Cu", "медь", "63.54", 1, 5, false, "+2"], ["Zn", "цинк", "65.38", 2, 5, false, "+2"], ["Ga", "галлий", "69.72", 3, 5, false, "+3"], ["Ge", "германий", "72.63", 4, 5, false, "-4"], ["As", "мышьяк", "74.92", 5, 5, false, "-3"], ["Se", "селен", "78.97", 6, 5, false, "-2"], ["Br", "бром", "79.90", 7, 5, false, "-1"], ["Kr", "криптон", "83.79", 8, 5, false, "0"],
-        ["Rb", "рубидий", "85.46", 1, 6, false, "+1"], ["Sr", "стронций", "87.62", 2, 6, false, "+2"], ["Y", "иттрий", "88.90", 3, 6, false, "+3"], ["Zr", "цирконий", "91.22", 4, 6, false, "+4"], ["Nb", "ниобий", "92.90", 5, 6, false, "+5"], ["Mo", "молибден", "95.95", 6, 6, false, "+6"], ["Tc", "технеций", "98", 7, 6, false, "+7"],
-        ["Ru, Rh, Pd", "", "", 8, 6, true],
-        ["Ag", "серебро", "107.8", 1, 7, false, "+1"], ["Cd", "кадмий", "112.4", 2, 7, false, "+2"], ["In", "индий", "114.8", 3, 7, false, "+3"], ["Sn", "олово", "118.7", 4, 7, false, "+4"], ["Sb", "сурьма", "121.7", 5, 7, false, "-3"], ["Te", "теллур", "127.6", 6, 7, false, "-2"], ["I", "йод", "126.9", 7, 7, false, "-1"], ["Xe", "ксенон", "131.2", 8, 7, false, "0"],
-        ["Cs", "цезий", "132.9", 1, 8, false, "+1"], ["Ba", "барий", "137.3", 2, 8, false, "+2"], ["La*", "лантан", "138.9", 3, 8, false, "+3"], ["Hf", "гафний", "178.4", 4, 8, false, "+4"], ["Ta", "тантал", "180.9", 5, 8, false, "+5"], ["W", "вольфрам", "183.8", 6, 8, false, "+6"], ["Re", "рений", "186.2", 7, 8, false, "+7"],
-        ["Os, Ir, Pt", "", "", 8, 8, true],
-        ["Au", "золото", "196.9", 1, 9, false, "+3"], ["Hg", "ртуть", "200.5", 2, 9, false, "+2"], ["Tl", "таллий", "204.3", 3, 9, false, "+3"], ["Pb", "свинец", "207.2", 4, 9, false, "+2"], ["Bi", "висмут", "208.9", 5, 9, false, "+3"], ["Po", "полоний", "209", 6, 9, false, "+4"], ["At", "астат", "210", 7, 9, false, "-1"], ["Rn", "радон", "222", 8, 9, false, "0"],
-        ["Fr", "франций", "223", 1, 10, false, "+1"], ["Ra", "радий", "226", 2, 10, false, "+2"], ["Ac**", "актиний", "227", 3, 10, false, "+3"], ["Rf", "резерфордий", "267", 4, 10, false, "+4"], ["Db", "дубний", "268", 5, 10, false, "+5"], ["Sg", "сиборгий", "269", 6, 10, false, "+6"], ["Bh", "борий", "270", 7, 10, false, "+7"],
-        ["Hs, Mt, Ds", "", "", 8, 10, true]
+        
+        // --- 9 столбик (Кислотные остатки с фото) ---
+        ["NO<sub>2</sub><sup>-</sup>", "Нитриты", "Азотистая", 9, 1, false, ""],
+        ["NO<sub>3</sub><sup>-</sup>", "Нитраты", "Азотная", 9, 2, false, ""],
+        ["Cl<sup>-</sup>", "Хлориды", "Хлороводородная", 9, 3, false, ""],
+        ["SO<sub>3</sub><sup>2-</sup>", "Сульфиты", "Сернистая", 9, 4, false, ""],
+        ["SO<sub>4</sub><sup>2-</sup>", "Сульфаты", "Серная", 9, 5, false, ""],
+        ["S<sup>2-</sup>", "Сульфиды", "Сероводородная", 9, 6, false, ""],
+        ["PO<sub>4</sub><sup>3-</sup>", "Фосфаты", "Фосфорная", 9, 7, false, ""],
+        ["CO<sub>3</sub><sup>2-</sup>", "Карбонаты", "Угольная", 9, 8, false, ""],
+        ["SiO<sub>3</sub><sup>2-</sup>", "Силикаты", "Кремниевая", 9, 9, false, ""]
     ];
 
     const triads = {
         "Fe, Co, Ni": [["Fe", "железо", "55.8", "+3"], ["Co", "кобальт", "58.9", "+2"], ["Ni", "никель", "58.6", "+2"]],
         "Ru, Rh, Pd": [["Ru", "рутений", "101.0", "+4"], ["Rh", "родий", "102.9", "+3"], ["Pd", "палладий", "106.4", "+2"]],
-        "Os, Ir, Pt": [["Os", "осмий", "190.2", "+4"], ["Ir", "иридий", "192.2", "+4"], ["Pt", "платина", "195.0", "+4"]],
-        "Hs, Mt, Ds": [["Hs", "хассий", "277", "+4"], ["Mt", "мейтнерий", "278", "+3"], ["Ds", "дармштадтий", "281", "+2"]]
+        "Os, Ir, Pt": [["Os", "осмий", "190.2", "+4"], ["Ir", "иридий", "192.2", "+4"], ["Pt", "платина", "195.0", "+4"]]
     };
 
     const container = document.getElementById('table-area');
@@ -109,7 +112,7 @@
     function render() {
         container.innerHTML = '';
         document.documentElement.style.setProperty('--cols', maxCols);
-        container.appendChild(document.createElement('div'));
+        container.appendChild(document.createElement('div')); 
         for (let c = 1; c <= maxCols; c++) {
             const h = document.createElement('div'); h.className = 'h-col'; h.innerText = roman(c); container.appendChild(h);
         }
@@ -121,15 +124,10 @@
                 cell.onclick = () => openEdit(c, r);
                 const el = elements.find(e => e[3] === c && e[4] === r);
                 if (el) {
-                    if (el[5] && triads[el[0]]) {
-                        const st = document.createElement('div'); st.className = 'stack';
-                        triads[el[0]].forEach(t => {
-                            st.innerHTML += `<div class="sym-row"><div class="sym">${t[0]}</div><div class="ox">${t[3]}</div></div><div class="nam">${t[1]}</div>`;
-                        });
-                        cell.appendChild(st);
-                    } else {
-                        cell.innerHTML = `<div class="sym-row"><div class="sym">${el[0]}</div><div class="ox">${el[6]||''}</div></div><div class="nam">${el[1]}</div><div class="mas">${el[2]}</div>`;
-                    }
+                    cell.innerHTML = `
+                        <div class="sym-row"><div class="sym">${el[0]}</div><div class="ox">${el[6]||''}</div></div>
+                        <div class="nam">${el[1]}</div>
+                        <div class="mas">${el[2]}</div>`;
                 }
                 container.appendChild(cell);
             }
@@ -158,27 +156,29 @@
     function applyEdit() {
         const sym = document.getElementById('ed-sym').value;
         elements = elements.filter(e => !(e[3] === currentEditPos.col && e[4] === currentEditPos.row));
-        if (sym) elements.push([sym, document.getElementById('ed-nam').value, document.getElementById('ed-mas').value, currentEditPos.col, currentEditPos.row, false, document.getElementById('ed-ox').value]);
+        if (sym) {
+            elements.push([sym, document.getElementById('ed-nam').value, document.getElementById('ed-mas').value, currentEditPos.col, currentEditPos.row, false, document.getElementById('ed-ox').value]);
+        }
         render(); closeModal();
     }
 
     function saveConfig() {
         const blob = new Blob([JSON.stringify({maxCols, maxRows, elements})], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'table_config.json'; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'config_with_acids.json'; a.click();
     }
 
     document.getElementById('loadCfg').onchange = e => {
         const reader = new FileReader();
         reader.onload = ev => {
             const d = JSON.parse(ev.target.result);
-            maxCols = d.maxCols || 8; maxRows = d.maxRows || 10; elements = d.elements; render();
+            maxCols = d.maxCols; maxRows = d.maxRows; elements = d.elements; render();
         };
         reader.readAsText(e.target.files[0]);
     };
 
     function saveJpg() {
         html2canvas(container, { scale: 2 }).then(c => {
-            const a = document.createElement('a'); a.download = 'table.jpg'; a.href = c.toDataURL("image/jpeg", 0.9); a.click();
+            const a = document.createElement('a'); a.download = 'table_full.jpg'; a.href = c.toDataURL("image/jpeg", 0.9); a.click();
         });
     }
 
