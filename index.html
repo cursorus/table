@@ -1,6 +1,4 @@
-<!DOCTYPE html><html lang="ru">
-
-<head>
+<!DOCTYPE html><html lang="ru"><head>
     <meta charset="UTF-8">
     <title>Mendeleev Typography Style</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -14,9 +12,9 @@
             font-style: normal;
         }
 
-```
     :root {
         --f-main: 'LocalFont', 'Arial', sans-serif;
+        /* УВЕЛИЧЕН РАЗМЕР СИМВОЛА С 28 ДО 36 */
         --s-sym: 36px; --s-nam: 12px; --s-mas: 11px; --s-ox: 14px;
         --cols: 9;
         --accent: #007bff;
@@ -66,9 +64,9 @@
     .sym { font-size: var(--s-sym); font-weight: 1500; line-height: 1; color: #000; transition: color 0.3s; }
     .sym sub { font-size: 0.55em; vertical-align: sub; }
     .sym sup { font-size: 0.55em; vertical-align: super; }
-    
-    /* УМЕНЬШЕННЫЕ ЗВЕЗДОЧКИ для лантана и актиния */
-    .sym .small-asterisk { font-size: 0.4em; vertical-align: super; }
+
+    /* СТИЛЬ ДЛЯ ЗВЕЗДОЧЕК (LANTAN/ACTINIUM) */
+    .star { font-size: 0.5em; vertical-align: top; margin-left: 2px; position: relative; top: 0px; }
     
     /* ========================================= */
     /* НОВАЯ ЛОГИКА ЦВЕТОВ (ТОЛЬКО БУКВЫ)      */
@@ -90,7 +88,9 @@
     .nam { font-size: var(--s-nam); color: #333; font-weight: 700; margin-top: 2px; }
     .mas { font-size: var(--s-mas); color: #999; margin-top: 1px; line-height: 1.1; }
     .stack { display: flex; flex-direction: column; gap: 8px; }
-    .stack-el { display: flex; flex-direction: column; border-bottom: 1px dashed #eee; padding-bottom: 4px; }
+    
+    /* ИЗМЕНЕНО: Пунктир стал прозрачным */
+    .stack-el { display: flex; flex-direction: column; border-bottom: 1px dashed transparent; padding-bottom: 4px; }
     .stack-el:last-child { border: none; }
     
     #modal-ov { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); backdrop-filter: blur(4px); z-index: 1000; }
@@ -99,12 +99,10 @@
     .modal-btns { display: flex; gap: 10px; }
     .modal-btns button { flex: 1; padding: 12px; cursor: pointer; border-radius: 10px; border: none; font-weight: bold; }
 </style>
-```
+
 
 </head>
-<body>
-
-<div class="panel">
+<body><div class="panel">
     <div class="c-item">Шрифт <input type="file" id="fontUp"></div>
     <div class="c-item">Размер <input type="range" min="15" max="60" value="36" oninput="upd('sym', this.value)"></div>
     <button class="dl add-btn" onclick="addRow()">+ Строка</button>
@@ -112,11 +110,7 @@
     <div class="c-item">Конфиг <input type="file" id="loadCfg" accept=".json"></div>
     <button class="dl save-cfg" onclick="saveConfig()">Сохранить</button>
     <button class="dl" onclick="saveJpg()">JPG</button>
-</div>
-
-<div id="table-area"></div>
-
-<div id="modal-ov">
+</div><div id="table-area"></div><div id="modal-ov">
     <div id="modal">
         <h4 style="margin:0 0 15px">Правка</h4>
         <input type="text" id="ed-sym" placeholder="Символ">
@@ -128,13 +122,11 @@
             <button onclick="closeModal()" style="background:#f0f0f0">Отмена</button>
         </div>
     </div>
-</div>
-
-<script>
+</div><script>
     const upd = (t, v) => document.documentElement.style.setProperty(`--s-${t}`, v + 'px');
     let maxCols = 9, maxRows = 10;
     
-    // ДАННЫЕ В ПОЛНОЙ СОХРАННОСТИ
+    // ДАННЫЕ В ПОЛНОЙ СОХРАННОСТИ (Обновлены 9 столбец и La/Ac)
     let elements = [
         ["H", "водород", "1", 1, 1, false, "+1/-1"], ["He", "гелий", "4", 8, 1, false, "0"],
         ["Li", "литий", "7", 1, 2, false, "+1"], ["Be", "бериллий", "9", 2, 2, false, "+2"], ["B", "бор", "11", 3, 2, false, "+3"], ["C", "углерод", "12", 4, 2, false, "-4"], ["N", "азот", "14", 5, 2, false, "-3"], ["O", "кислород", "16", 6, 2, false, "-2"], ["F", "фтор", "19", 7, 2, false, "-1"], ["Ne", "неон", "20", 8, 2, false, "0"],
@@ -145,12 +137,19 @@
         ["Rb", "рубидий", "85", 1, 6, false, "+1"], ["Sr", "стронций", "88", 2, 6, false, "+2"], ["Y", "иттрий", "89", 3, 6, false, "+3"], ["Zr", "цирконий", "91", 4, 6, false, "+4"], ["Nb", "ниобий", "93", 5, 6, false, "+5"], ["Mo", "молибден", "96", 6, 6, false, "+6"], ["Tc", "технеций", "98", 7, 6, false, "+7"],
         ["Ru, Rh, Pd", "", "", 8, 6, true],
         ["Ag", "серебро", "108", 1, 7, false, "+1"], ["Cd", "кадмий", "112", 2, 7, false, "+2"], ["In", "индий", "115", 3, 7, false, "+3"], ["Sn", "олово", "119", 4, 7, false, "+4"], ["Sb", "сурьма", "122", 5, 7, false, "-3"], ["Te", "теллур", "128", 6, 7, false, "-2"], ["I", "йод", "127", 7, 7, false, "-1"], ["Xe", "ксенон", "131", 8, 7, false, "0"],
-        ["Cs", "цезий", "133", 1, 8, false, "+1"], ["Ba", "барий", "137", 2, 8, false, "+2"], ["La*", "лантан", "139", 3, 8, false, "+3"], ["Hf", "гафний", "178", 4, 8, false, "+4"], ["Ta", "тантал", "181", 5, 8, false, "+5"], ["W", "вольфрам", "184", 6, 8, false, "+6"], ["Re", "рений", "186", 7, 8, false, "+7"],
+        ["Cs", "цезий", "133", 1, 8, false, "+1"], ["Ba", "барий", "137", 2, 8, false, "+2"], 
+        /* ИЗМЕНЕНО: La* -> La со звездочкой в span */
+        ["La<span class='star'>*</span>", "лантан", "139", 3, 8, false, "+3"], 
+        ["Hf", "гафний", "178", 4, 8, false, "+4"], ["Ta", "тантал", "181", 5, 8, false, "+5"], ["W", "вольфрам", "184", 6, 8, false, "+6"], ["Re", "рений", "186", 7, 8, false, "+7"],
         ["Os, Ir, Pt", "", "", 8, 8, true],
         ["Au", "золото", "197", 1, 9, false, "+3"], ["Hg", "ртуть", "201", 2, 9, false, "+2"], ["Tl", "таллий", "204", 3, 9, false, "+3"], ["Pb", "свинец", "207", 4, 9, false, "+2"], ["Bi", "висмут", "209", 5, 9, false, "+3"], ["Po", "полоний", "209", 6, 9, false, "+4"], ["At", "астат", "210", 7, 9, false, "-1"], ["Rn", "радон", "222", 8, 9, false, "0"],
-        ["Fr", "франций", "223", 1, 10, false, "+1"], ["Ra", "радий", "226", 2, 10, false, "+2"], ["Ac**", "актиний", "227", 3, 10, false, "+3"], ["Rf", "резерфордий", "267", 4, 10, false, "+4"], ["Db", "дубний", "268", 5, 10, false, "+5"], ["Sg", "сиборгий", "269", 6, 10, false, "+6"], ["Bh", "борий", "270", 7, 10, false, "+7"],
+        ["Fr", "франций", "223", 1, 10, false, "+1"], ["Ra", "радий", "226", 2, 10, false, "+2"], 
+        /* ИЗМЕНЕНО: Ac** -> Ac со звездочками в span */
+        ["Ac<span class='star'>**</span>", "актиний", "227", 3, 10, false, "+3"], 
+        ["Rf", "резерфордий", "267", 4, 10, false, "+4"], ["Db", "дубний", "268", 5, 10, false, "+5"], ["Sg", "сиборгий", "269", 6, 10, false, "+6"], ["Bh", "борий", "270", 7, 10, false, "+7"],
         ["Hs, Mt, Ds", "", "", 8, 10, true],
-        // Кислоты - индексы перенесены в рамки степеней окисления
+        
+        // Кислоты: Перенесены заряды в последний элемент массива (рамка)
         ["NO<sub>2</sub>", "нитриты", "азотистая", 9, 1, false, "-"],
         ["NO<sub>3</sub>", "нитраты", "азотная", 9, 2, false, "-"],
         ["Cl", "хлориды", "хлороводородная", 9, 3, false, "-"],
@@ -174,8 +173,8 @@
     const transitions = new Set([
         "Sc","Ti","V","Cr","Mn","Fe","Co","Ni","Cu","Zn",
         "Y","Zr","Nb","Mo","Tc","Ru","Rh","Pd","Ag","Cd",
-        "La*","Hf","Ta","W","Re","Os","Ir","Pt","Au","Hg",
-        "Ac**","Rf","Db","Sg","Bh","Hs","Mt","Ds",
+        "La<span class='star'>*</span>","Hf","Ta","W","Re","Os","Ir","Pt","Au","Hg",
+        "Ac<span class='star'>**</span>","Rf","Db","Sg","Bh","Hs","Mt","Ds",
         // Триады
         "Fe, Co, Ni", "Ru, Rh, Pd", "Os, Ir, Pt", "Hs, Mt, Ds"
     ]);
@@ -204,7 +203,7 @@
                         cell.classList.add('type-nonmetal');
                     } else if (transitions.has(sym)) {
                         cell.classList.add('type-transition');
-                    } else if (!sym.includes('<')) { 
+                    } else if (!sym.includes('<') || sym.includes('star')) { 
                         cell.classList.add('type-metal');
                     }
 
@@ -220,15 +219,7 @@
                         });
                         cell.appendChild(st);
                     } else {
-                        // Обработка звездочек для La* и Ac**
-                        let displaySym = el[0];
-                        if (el[0] === 'La*') {
-                            displaySym = 'La<span class="small-asterisk">*</span>';
-                        } else if (el[0] === 'Ac**') {
-                            displaySym = 'Ac<span class="small-asterisk">**</span>';
-                        }
-                        
-                        cell.innerHTML = `<div class="sym-row"><div class="sym">${displaySym}</div><div class="ox">${el[6]||''}</div></div><div class="nam">${el[1]}</div><div class="mas">${el[2]}</div>`;
+                        cell.innerHTML = `<div class="sym-row"><div class="sym">${el[0]}</div><div class="ox">${el[6]||''}</div></div><div class="nam">${el[1]}</div><div class="mas">${el[2]}</div>`;
                     }
                 }
                 container.appendChild(cell);
